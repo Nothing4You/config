@@ -1,0 +1,5 @@
+user = mail
+password = securepassword
+hosts = 127.0.0.1
+dbname = mail
+query = SELECT email FROM users WHERE email='%s'

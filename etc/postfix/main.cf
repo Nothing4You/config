@@ -1,0 +1,152 @@
+# See /usr/share/postfix/main.cf.dist for a commented, more complete version
+
+
+# Debian specific:  Specifying a file name will cause the first
+# line of that file to be used as the name.  The Debian default
+# is /etc/mailname.
+#myorigin = /etc/mailname
+
+smtpd_banner = $myhostname ESMTP $mail_name (Debian/GNU)
+biff = no
+
+# appending .domain is the MUA's job.
+append_dot_mydomain = no
+
+# Uncomment the next line to generate "delayed mail" warnings
+#delay_warning_time = 4h
+
+readme_directory = no
+
+# TLS parameters
+smtpd_tls_cert_file=/etc/ssl/with-chain/postfix.pem
+smtpd_tls_key_file=/etc/ssl/with-chain/postfix.pem
+smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+smtp_use_tls = yes
+smtpd_use_tls = yes
+#smtpd_tls_auth_only = yes
+#smtp_use_tls = no
+#smtpd_use_tls = no
+smtpd_tls_auth_only = no
+
+# See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for
+# information on enabling SSL in the smtp client.
+
+message_size_limit = 40960000
+
+# bind postfix to the IPs which reverse to w.tf-w.tf
+smtp_bind_address = 78.46.113.110
+smtp_bind_address6 = 2a01:4f8:120:13cd::3
+
+myhostname = w.tf-w.tf
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+myorigin = /etc/mailname
+mydestination = pollux.brianum.net, localhost.brianum.net, localhost
+relayhost = 
+mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 10.20.0.0/24
+mailbox_size_limit = 0
+recipient_delimiter = +
+inet_interfaces = all
+virtual_mailbox_domains = mysql:/etc/postfix/mysql-virtual-domain-maps.cf
+virtual_mailbox_maps = mysql:/etc/postfix/mysql-virtual-mailbox-maps.cf
+virtual_alias_maps =
+  mysql:/etc/postfix/mysql-virtual-alias-maps.cf
+  mysql:/etc/postfix/mysql-virtual-mailbox-maps.cf
+virtual_mailbox_limit = 0
+virtual_transport = dovecot
+dovecot_destination_recipient_limit = 1
+
+#receive_override_options = no_address_mappings
+
+# and the common settings to enable SASL:
+smtpd_sasl_auth_enable = yes
+
+smtpd_sasl_type = dovecot
+
+# Can be an absolute path, or relative to $queue_directory
+# Debian/Ubuntu users: Postfix is setup by default to run chrooted, so it is best to leave it as-is below
+smtpd_sasl_path = private/auth
+
+smtpd_helo_restrictions =
+  reject_invalid_helo_hostname
+  reject_non_fqdn_helo_hostname
+  reject_unknown_helo_hostname
+
+smtpd_recipient_restrictions =
+  permit_mynetworks
+  permit_sasl_authenticated
+  reject_unauth_destination
+  reject_non_fqdn_sender
+  reject_non_fqdn_recipient
+  reject_unknown_sender_domain
+  reject_invalid_hostname
+#  permit_dnswl_client list.dnswl.org
+
+# custom whitelist for idiot sources that are shared & blacklisted
+  check_client_access hash:/etc/postfix/rbl_whitelist
+
+  reject_rhsbl_reverse_client dbl.spamhaus.org
+  reject_rhsbl_sender dbl.spamhaus.org
+  reject_rhsbl_client dbl.spamhaus.org
+#  reject_rhsbl_sender fresh15.spameatingmonkey.net
+#  reject_rhsbl_client fresh15.spameatingmonkey.net
+#  reject_rhsbl_sender uribl.spameatingmonkey.net
+#  reject_rhsbl_client uribl.spameatingmonkey.net
+#  reject_rhsbl_sender urired.spameatingmonkey.net
+#  reject_rhsbl_client urired.spameatingmonkey.net
+  reject_rhsbl_client hostkarma.junkemailfilter.com=127.0.0.2
+  
+  reject_rbl_client b.barracudacentral.org
+  reject_rbl_client zen.spamhaus.org
+#  reject_rbl_client bl.spameatingmonkey.net,
+  reject_rbl_client bl.spamcop.net,
+  reject_rbl_client hostkarma.junkemailfilter.com=127.0.0.2,
+#  reject_rbl_client dnsbl.njabl.org,
+#  reject_rbl_client bl.tiopan.com,
+  reject_rbl_client spamsources.fabel.dk,
+  reject_rbl_client truncate.gbudb.net,
+#  reject_rbl_client ubl.unsubscore.com,
+#  reject_rbl_client dnsbl.sorbs.net,
+#  reject_rbl_client backscatter.spameatingmonkey.net,
+#  reject_rbl_client bl.spameatingmonkey.net,
+
+#  reject_rbl_client dnsbl-1.uceprotect.net
+#  reject_rbl_client dnsbl-2.uceprotect.net
+
+  warn_if_reject reject_rhsbl_sender fulldom.rfc-clueless.org
+
+  reject_unauth_pipelining
+  permit
+
+smtpd_data_restrictions =
+  reject_unauth_pipelining
+  reject_multi_recipient_bounce
+  permit
+
+smtpd_relay_restrictions =
+  permit_mynetworks
+  permit_sasl_authenticated reject_unauth_destination reject_non_fqdn_sender reject_non_fqdn_recipient reject_unknown_sender_domain check_client_access hash:/etc/postfix/rbl_whitelist reject_rhsbl_reverse_client dbl.spamhaus.org reject_rhsbl_sender dbl.spamhaus.org reject_rhsbl_client dbl.spamhaus.org reject_rhsbl_client hostkarma.junkemailfilter.com=127.0.0.2 reject_rbl_client b.barracudacentral.org reject_rbl_client zen.spamhaus.org reject_rbl_client bl.spamcop.net, reject_rbl_client hostkarma.junkemailfilter.com=127.0.0.2, reject_rbl_client spamsources.fabel.dk, reject_rbl_client truncate.gbudb.net
+#  reject_rbl_client dnsbl-1.uceprotect.net
+  warn_if_reject reject_rhsbl_sender fulldom.rfc-clueless.org
+  reject_unauth_pipelining permit
+
+
+#  reject_rhsbl_sender fresh15.spameatingmonkey.net
+#  reject_rhsbl_client fresh15.spameatingmonkey.net
+#  reject_rhsbl_sender uribl.spameatingmonkey.net
+#  reject_rhsbl_client uribl.spameatingmonkey.net
+#  reject_rhsbl_sender urired.spameatingmonkey.net
+#  reject_rhsbl_client urired.spameatingmonkey.net
+#  reject_rbl_client bl.spameatingmonkey.net,
+#  reject_rbl_client dnsbl.njabl.org,
+#  reject_rbl_client ubl.unsubscore.com,
+#  reject_rbl_client backscatter.spameatingmonkey.net,
+#  reject_rbl_client bl.spameatingmonkey.net,
+#  reject_rbl_client dnsbl-2.uceprotect.net
+
+postscreen_access_list =
+  permit_mynetworks
+  cidr:/etc/postfix/postscreen_access.cidr
+
+#postscreen_cache_map = proxy:btree:$data_directory/postscreen_cache
